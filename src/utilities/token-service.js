@@ -74,6 +74,20 @@ async function refreshTokens({ accessToken, refreshToken }) {
     }
 }
 
+/**
+ * Deletes all refresh tokens associated with the given user
+ * @param {ObjectId} userId 
+ */
+async function deleteAllRefreshTokens(userId){
+    try {
+        await RefreshToken.deleteMany({user: userId});
+        await redisClient.del(`refresh:${userId}`);
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+}
+
 
 function signRefreshToken(user) {
     return jwt.sign(
@@ -205,4 +219,5 @@ module.exports = {
     verifyJwt,
     verifySignature,
     revokeRefreshToken,
+    deleteAllRefreshTokens,
 }

@@ -69,6 +69,7 @@ const deleteOne = async (req, res, next) => {
         const user = await User.findOne({ _id: userId });
         if (!user) return utils.respondWithStatus(res, 404, "User not found");
         await user.deleteOne();
+        await tokenService.deleteAllRefreshTokens(userId);
 
         // publish user deleted message
         const channel = getChannel();
