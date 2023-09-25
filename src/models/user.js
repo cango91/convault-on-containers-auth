@@ -37,12 +37,6 @@ const userSchema = new mongoose.Schema({
         minLength: 8,
         required: true,
     },
-    salt: {
-        type: String,
-    },
-    publicKey: {
-        type: String,
-    },
 },
     {
         timestamps: true,
@@ -50,11 +44,6 @@ const userSchema = new mongoose.Schema({
             transform: function (_, ret) {
                 delete ret.password;
                 delete ret.email;
-                delete ret.salt;
-                if(ret.publicKey){
-                    ret.hasPublicKey = true;
-                }
-                delete ret.publicKey;
                 return ret;
             }
         }
@@ -81,15 +70,6 @@ userSchema.pre('save', async function (next) {
             return next(new Error('Username already exists'));
         } 
     } 
-    return next();
-});
-
-userSchema.pre('save', async function (next){
-    if(this.isModified('publicKey')){
-        if(!crypt.verifyPublicKeyFormat(this.publicKey)){
-            return next(new Error('Invalid key'));
-        }
-    }
     return next();
 });
 

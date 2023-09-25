@@ -31,7 +31,7 @@ app.use('/api', usersRouter);
 if (!TEST) {
     connectDB();
     app.listen(PORT, () => {
-        console.log(`Users microservice running on port ${PORT}`);
+        console.log(`Authentication microservice running on port ${PORT}`);
     });
 }
 
