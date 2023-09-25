@@ -8,6 +8,7 @@ RUN npm install
 
 # Copy app code and prune dev dependencies
 COPY ./src ./src
+RUN rm -rf /app/src/tests
 RUN npm prune --production
 
 # Final image
