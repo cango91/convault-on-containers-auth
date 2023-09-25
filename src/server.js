@@ -9,7 +9,7 @@ const usersRouter = require('./routes/users-router');
 
 const TEST = process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'test'
 const DEBUG = process.env.NODE_ENV ? process.env.NODE_ENV.toLocaleLowerCase() !== 'production' : true;
-const PORT = process.env.PORT || 3000;
+const PORT = 3001;
 
 const configureApp = (middleware) => {
 
