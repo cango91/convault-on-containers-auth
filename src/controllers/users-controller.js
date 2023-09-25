@@ -17,7 +17,7 @@ const create = async (req, res, next) => {
         const routingKey = 'user.created';
         channel.assertExchange(exchange, 'topic', { durable: false });
         channel.publish(exchange, routingKey, Buffer.from(JSON.stringify({ userId: user._id, username: user.username })));
-        
+
         res.status(201).json({ accessToken, refreshToken });
     } catch (error) {
         console.error(error);
@@ -63,6 +63,27 @@ const refresh = async (req, res, next) => {
     }
 }
 
+const deleteOne = async (req, res, next) => {
+    try {
+        const { userId } = req.body;
+        const user = await User.findOne({ _id: userId });
+        if (!user) return utils.respondWithStatus(res, 404, "User not found");
+        await user.deleteOne();
+
+        // publish user deleted message
+        const channel = getChannel();
+        const exchange = 'user_events';
+        const routingKey = 'user.deleted';
+        channel.assertExchange(exchange, 'topic', { durable: false });
+        channel.publish(exchange, routingKey, Buffer.from(JSON.stringify({ userId })));
+
+        res.status(204).json({});
+    } catch (error) {
+        console.error(error);
+        utils.respondWithStatus(res, 400, error.message);
+    }
+}
+
 async function handleUserAuthentication(user, res) {
     const accessToken = tokenService.createJwt(user, process.env.JWT_EXP);
     const refreshToken = await tokenService.createRefreshToken(user, process.env.REFRESH_EXP);
@@ -74,5 +95,6 @@ module.exports = {
     create,
     login,
     logout,
-    refresh
+    refresh,
+    delete: deleteOne,
 }

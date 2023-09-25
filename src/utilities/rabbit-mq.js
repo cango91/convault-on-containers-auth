@@ -1,15 +1,22 @@
 const amqp = require('amqplib');
 
 let channel ,connection;
+const connectionString = process.env.RABBIT_URL ? process.env.RABBIT_URL : 'amqp://localhost'
 
-async function initializeRabbitMQ(){
-    try {
-        connection = await amqp.connect('amqp://localhost');
-        channel = await connection.createChannel();
-    } catch (error) {
-        console.error('Failed to initialize rabbitMQ', error);
+async function initializeRabbitMQ(retries = 5, backoff = 3000) {
+    if (retries === 0) {
+      throw new Error('Max retries reached, could not connect to RabbitMQ.');
     }
-}
+    
+    try {
+      connection = await amqp.connect(connectionString);
+      channel = await connection.createChannel();
+    } catch (error) {
+      console.error(`Failed to connect to RabbitMQ, retrying in ${backoff}ms...`);
+      await new Promise(resolve => setTimeout(resolve, backoff));
+      return initializeRabbitMQ(retries - 1, backoff * 2);
+    }
+  }
 
 function getChannel(){
     if(!channel) throw new Error('Channel to RabbitMQ not established yet');

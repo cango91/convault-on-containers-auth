@@ -4,7 +4,7 @@ const request = require('supertest');
 const mongoose = require('mongoose');
 const { app } = require('../server');
 const User = require('../models/user');
-const {closeRabbitMQ} = require('../utilities/rabbit-mq');
+const { closeRabbitMQ } = require('../utilities/rabbit-mq');
 let userData, accessToken, refreshToken;
 const SERVICE_SECRET = process.env.AUTH_SERVICE_SECRET;
 
@@ -29,7 +29,7 @@ describe('Auth Endpoints', () => {
     it('should create a new user', async () => {
         // Test for /api/signup
         const payload = userData;
-        const response = await request(app).post('/services/authentication/api/signup')
+        const response = await request(app).post('/services/authentication/api')
             .set('x-service-secret', SERVICE_SECRET)
             .send(payload);
         expect(response.statusCode).toEqual(201);
@@ -87,8 +87,19 @@ describe('Auth Endpoints', () => {
         const refresh2 = await request(app).post('/services/authentication/api/refresh')
             .set('x-service-secret', SERVICE_SECRET)
             .send({ accessToken, refreshToken });
-        const {secondNewAccessToken, secondNewRefreshToken} = refresh2.body;
+        const { secondNewAccessToken, secondNewRefreshToken } = refresh2.body;
         expect(secondNewAccessToken).toEqual(newAccessToken);
         expect(secondNewRefreshToken).toEqual(newRefreshToken);
+    });
+
+    it("should delete a user", async () => {
+        let user = await User.findOne({});
+        const payload = { userId: user._id };
+        const response = await request(app).delete('/services/authentication/api')
+            .set('x-service-secret', SERVICE_SECRET)
+            .send(payload);
+        expect(response.status).toEqual(204);
+        user = await User.findOne({}).exec();
+        expect(user).toBeNull();
     });
 });

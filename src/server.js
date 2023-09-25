@@ -29,7 +29,7 @@ const app = configureApp();
 app.use(authenticateService);
 app.use('/services/authentication/api', usersRouter);
 
-initializeRabbitMQ();
+(async () => await initializeRabbitMQ())();
 
 if (!TEST) {
     connectDB();
