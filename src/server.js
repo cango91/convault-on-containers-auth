@@ -26,7 +26,7 @@ const configureApp = (middleware) => {
 const app = configureApp();
 
 app.use(authenticateService);
-app.use('services/authentication/api', usersRouter);
+app.use('/services/authentication/api', usersRouter);
 
 if (!TEST) {
     connectDB();

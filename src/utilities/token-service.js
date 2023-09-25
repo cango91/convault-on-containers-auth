@@ -203,7 +203,6 @@ module.exports = {
     getUserFromToken,
     refreshTokens,
     verifyJwt,
-    // setCookie,
     verifySignature,
     revokeRefreshToken,
 }
