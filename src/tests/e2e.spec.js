@@ -4,6 +4,7 @@ const request = require('supertest');
 const mongoose = require('mongoose');
 const { app } = require('../server');
 const User = require('../models/user');
+const {closeRabbitMQ} = require('../utilities/rabbit-mq');
 let userData, accessToken, refreshToken;
 const SERVICE_SECRET = process.env.AUTH_SERVICE_SECRET;
 
@@ -21,6 +22,7 @@ afterAll(async () => {
     const redisClient = require('../utilities/redis-client');
     await mongoose.connection.close();
     await redisClient.quit();
+    await closeRabbitMQ();
 });
 
 describe('Auth Endpoints', () => {
@@ -30,7 +32,7 @@ describe('Auth Endpoints', () => {
         const response = await request(app).post('/services/authentication/api/signup')
             .set('x-service-secret', SERVICE_SECRET)
             .send(payload);
-        expect(response.statusCode).toEqual(200);
+        expect(response.statusCode).toEqual(201);
         const user = await User.findOne({ email: 'test@email.com' });
         expect(user).not.toBeNull();
 

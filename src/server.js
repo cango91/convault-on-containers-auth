@@ -6,6 +6,7 @@ const sanitize = require('express-mongo-sanitize');
 const connectDB = require('./utilities/db');
 const authenticateService = require('./middleware/authenticate-service');
 const usersRouter = require('./routes/users-router');
+const { initializeRabbitMQ } = require('./utilities/rabbit-mq');
 
 const TEST = process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'test'
 const DEBUG = process.env.NODE_ENV ? process.env.NODE_ENV.toLocaleLowerCase() !== 'production' : true;
@@ -27,6 +28,8 @@ const app = configureApp();
 
 app.use(authenticateService);
 app.use('/services/authentication/api', usersRouter);
+
+initializeRabbitMQ();
 
 if (!TEST) {
     connectDB();
