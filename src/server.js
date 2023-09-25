@@ -15,6 +15,7 @@ const configureApp = (middleware) => {
 
     const app = express();
     app.use(logger('dev'));
+    app.use(express.json());
     app.use(sanitize());
 
     if (middleware) app.use(middleware);
@@ -30,7 +31,7 @@ app.use('/api', usersRouter);
 if (!TEST) {
     connectDB();
     app.listen(PORT, () => {
-        console.log(`Authentication microservice running on port ${PORT}`);
+        console.log(`Users microservice running on port ${PORT}`);
     });
 }
 

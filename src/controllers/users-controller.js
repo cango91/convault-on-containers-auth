@@ -1,7 +1,9 @@
 const User = require('../models/user');
 const tokenService = require('../utilities/token-service');
 const utils = require('../utilities/utils');
+
 const redisClient = require('../utilities/redis-client');
+
 
 const create = async (req, res, next) => {
     try {
@@ -43,7 +45,7 @@ const refresh = async (req, res, next) => {
     try {
         const { accessToken, refreshToken } = req.body;
         if (!refreshToken || !accessToken) return res.status(401).json({ message: 'Unauthorized' });
-        const tokens = await tokenService.refreshTokens({accessToken:jwtToken,refreshToken});
+        const tokens = await tokenService.refreshTokens({ accessToken, refreshToken });
         res.json(tokens);
     } catch (error) {
         console.error(error);
@@ -54,7 +56,7 @@ const refresh = async (req, res, next) => {
 async function handleUserAuthentication(user, res) {
     const accessToken = tokenService.createJwt(user, process.env.JWT_EXP);
     const refreshToken = await tokenService.createRefreshToken(user, process.env.REFRESH_EXP);
-    redisClient.set(`refresh:${user._id}`, JSON.stringify(refreshToken), 'NX', 'EX', utils.toSeconds(process.env.REFRESH_EXP));
+    await redisClient.set(`refresh:${user._id}`, JSON.stringify(refreshToken), 'NX', 'EX', utils.toSeconds(process.env.REFRESH_EXP));
     res.json({ accessToken, refreshToken });
 }
 

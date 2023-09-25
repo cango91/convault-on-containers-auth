@@ -20,7 +20,7 @@ if (!JWT_EXP || !JWT_SECRET || !REFRESH_EXP || !REFRESH_SECRET) {
  * @returns {Promise<{accessToken: string, refreshToken:string>}}
  */
 async function refreshTokens({ accessToken, refreshToken }) {
-    const key = quickDigest(accessToken + "::" + refreshToken);
+    const key = quickDigest(accessToken + "::" + refreshToken.token);
 
     // Try to acquire lock in Redis
     if (!(await redisClient.set(key, 'lock', 'NX', 'EX', 60))) {
@@ -34,9 +34,9 @@ async function refreshTokens({ accessToken, refreshToken }) {
         }
 
         if (verifySignature(accessToken, JWT_SECRET) &&
-            verifySignature(refreshToken, REFRESH_SECRET)) {
+            verifySignature(refreshToken.token, REFRESH_SECRET)) {
 
-            await verifyJwt(refreshToken, REFRESH_SECRET);
+            await verifyJwt(refreshToken.token, REFRESH_SECRET);
             const user = await User.findById(getUserFromToken(accessToken));
 
             // Try to fetch storedToken from Redis first
@@ -44,24 +44,22 @@ async function refreshTokens({ accessToken, refreshToken }) {
             let storedToken = storedTokenRedis ? JSON.parse(storedTokenRedis) : null;
 
             if (!storedToken) {
-                storedToken = await RefreshToken.findOne({ token: refreshToken });
-                await redisClient.set(`refresh:${user._id}`, JSON.stringify(storedToken), 'EX', toSeconds(REFRESH_EXP));
+                storedToken = await RefreshToken.findOne({ token: refreshToken.token });
+                if (storedToken) {
+                    await redisClient.set(`refresh:${user._id}`, JSON.stringify(storedToken), 'EX', toSeconds(REFRESH_EXP));
+                }
             }
 
-            if (!storedToken || storedToken.status !== 'valid' || !storedToken.user._id.equals(user._id)) {
+            if (!storedToken || storedToken.status !== 'valid' || !user._id.equals(storedToken.user)) {
                 throw new Error('Invalid token');
             }
 
             const newRefreshToken = signRefreshToken(user);
             const newJwt = createJwt(user, JWT_EXP);
-            storedToken.token = newRefreshToken;
-            storedToken.expiresAt = new Date(parseJwt(newRefreshToken).exp * 1000);
-            await storedToken.save();
+            const fresh = await RefreshToken.findOneAndUpdate({_id: storedToken._id}, {token: newRefreshToken, expiresAt:new Date(parseJwt(newRefreshToken).exp * 1000) }, {new:true});
             // Save the new refresh token in Redis
-            await redisClient.set(`refresh:${user._id}`, JSON.stringify(storedToken), 'EX', toSeconds(REFRESH_EXP));
-
+            await redisClient.set(`refresh:${user._id}`, JSON.stringify(fresh), 'EX', toSeconds(REFRESH_EXP));
             const tokens = { accessToken: newJwt, refreshToken: newRefreshToken };
-
             await redisClient.set(`idempotency:${key}`, JSON.stringify(tokens), 'EX', 60);
             return tokens;
         } else {
@@ -129,7 +127,7 @@ async function createRefreshToken(user, expiresIn) {
         });
 
         await refreshToken.save();
-        return token;
+        return refreshToken;
     } catch (error) {
         console.error(error);
         throw error;
@@ -178,15 +176,15 @@ function verifySignature(token, secret = JWT_SECRET) {
 }
 
 async function revokeRefreshToken(accessToken, refreshToken) {
-    const key = quickDigest(accessToken + "::" + refreshToken);
+    const key = quickDigest(accessToken + "::" + refreshToken.token);
 
     // Try to acquire lock in Redis
     if (!(await redisClient.set(key, 'lock', 'NX', 'EX', 60))) {
         throw new Error('Could not acquire lock');
     }
     try {
-        await verifyJwt(refreshToken, REFRESH_SECRET);
-        const revoked = await RefreshToken.findOneAndUpdate({ token: refreshToken }, { status: 'revoked' }, { new: true });
+        await verifyJwt(refreshToken.token, REFRESH_SECRET);
+        const revoked = await RefreshToken.findOneAndUpdate({ token: refreshToken.token }, { status: 'revoked' }, { new: true });
         // update idemotency and refresh caches
         await redisClient.del(`idempotency:${key}`);
         await redisClient.set(`refresh:${revoked.user}`, JSON.stringify(revoked), 'EX', 600);
