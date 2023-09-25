@@ -1,4 +1,4 @@
-const secret = process.env.SERVICE_SECRET;
+const secret = process.env.AUTH_SERVICE_SECRET;
 if (!secret) {
     console.error('Required app configuration environment variables missing');
     process.exit(1);

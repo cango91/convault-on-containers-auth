@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const { app } = require('../server');
 const User = require('../models/user');
 let userData, accessToken, refreshToken;
+const SERVICE_SECRET = process.env.AUTH_SERVICE_SECRET;
 
 beforeAll(async () => {
     await mongoose.connect(global.__MONGO_URI__, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -27,7 +28,7 @@ describe('Auth Endpoints', () => {
         // Test for /api/signup
         const payload = userData;
         const response = await request(app).post('/services/authentication/api/signup')
-            .set('x-service-secret', process.env.SERVICE_SECRET)
+            .set('x-service-secret', SERVICE_SECRET)
             .send(payload);
         expect(response.statusCode).toEqual(200);
         const user = await User.findOne({ email: 'test@email.com' });
@@ -40,7 +41,7 @@ describe('Auth Endpoints', () => {
         const payload = { ...userData };
         delete payload.email;
         const response = await request(app).post('/services/authentication/api/login')
-            .set('x-service-secret', process.env.SERVICE_SECRET)
+            .set('x-service-secret', SERVICE_SECRET)
             .send(payload);
         expect(response.statusCode).toEqual(200);
         expect(response.body.refreshToken).not.toBeNull();
@@ -54,7 +55,7 @@ describe('Auth Endpoints', () => {
         // Test for /api/logout
         const payload = { refreshToken, accessToken };
         const response = await request(app).post('/services/authentication/api/logout')
-            .set('x-service-secret', process.env.SERVICE_SECRET)
+            .set('x-service-secret', SERVICE_SECRET)
             .send(payload);
         expect(response.status).toEqual(200);
     });
@@ -65,14 +66,14 @@ describe('Auth Endpoints', () => {
         const payload = { ...userData };
         delete payload.email;
         const response = await request(app).post('/services/authentication/api/login')
-            .set('x-service-secret', process.env.SERVICE_SECRET)
+            .set('x-service-secret', SERVICE_SECRET)
             .send(payload);
         expect(response.statusCode).toEqual(200);
         refreshToken = response.body.refreshToken;
         accessToken = response.body.accessToken;
         // get refreshed tokens
         const refresh1 = await request(app).post('/services/authentication/api/refresh')
-            .set('x-service-secret', process.env.SERVICE_SECRET)
+            .set('x-service-secret', SERVICE_SECRET)
             .send({ accessToken, refreshToken });
         expect(refresh1.statusCode).toEqual(200);
         const { newAccessToken, newRefreshToken } = refresh1.body;
@@ -82,7 +83,7 @@ describe('Auth Endpoints', () => {
         expect(newAccessToken).not.toEqual(accessToken);
         // idempotency check
         const refresh2 = await request(app).post('/services/authentication/api/refresh')
-            .set('x-service-secret', process.env.SERVICE_SECRET)
+            .set('x-service-secret', SERVICE_SECRET)
             .send({ accessToken, refreshToken });
         const {secondNewAccessToken, secondNewRefreshToken} = refresh2.body;
         expect(secondNewAccessToken).toEqual(newAccessToken);
