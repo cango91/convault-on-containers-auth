@@ -11,6 +11,7 @@ async function initializeRabbitMQ(retries = 5, backoff = 3000) {
     try {
       connection = await amqp.connect(connectionString);
       channel = await connection.createChannel();
+      console.log("Connected to RabbitMQ");
     } catch (error) {
       console.error(`Failed to connect to RabbitMQ, retrying in ${backoff}ms...`);
       await new Promise(resolve => setTimeout(resolve, backoff));
