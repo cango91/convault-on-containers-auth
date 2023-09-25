@@ -53,6 +53,20 @@ const refresh = async (req, res, next) => {
     }
 }
 
+const resolveUsername = async (req, res, next) => {
+    try {
+        const username = req.params.username;
+        const user = await User.findOne({ username: new RegExp(`^${username}$`, 'i') });
+        if (!user) {
+            return utils.respondWithStatus(res, 404, "username not found");
+        }
+        res.json({username, _id: user._id});
+    } catch (error) {
+        console.error(error);
+        utils.respondWithStatus(res, 400, error.message);
+    }
+}
+
 async function handleUserAuthentication(user, res) {
     const accessToken = tokenService.createJwt(user, process.env.JWT_EXP);
     const refreshToken = await tokenService.createRefreshToken(user, process.env.REFRESH_EXP);
@@ -65,4 +79,5 @@ module.exports = {
     login,
     logout,
     refresh,
+    resolveUsername,
 }

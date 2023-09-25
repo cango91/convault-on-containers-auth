@@ -7,4 +7,6 @@ router.post('/login', usersCtrl.login);
 router.post('/logout', usersCtrl.logout);
 router.post('/refresh', usersCtrl.refresh);
 
+router.get('/resolve/:username', usersCtrl.resolveUsername);
+
 module.exports = router;
