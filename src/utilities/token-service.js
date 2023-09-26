@@ -197,8 +197,8 @@ async function revokeRefreshToken(accessToken, refreshToken) {
         throw new Error('Could not acquire lock');
     }
     try {
-        await verifyJwt(refreshToken.token, REFRESH_SECRET);
-        const revoked = await RefreshToken.findOneAndUpdate({ token: refreshToken.token }, { status: 'revoked' }, { new: true });
+        await verifyJwt(refreshToken, REFRESH_SECRET);
+        const revoked = await RefreshToken.findOneAndUpdate({ token: refreshToken }, { status: 'revoked' }, { new: true });
         // update idemotency and refresh caches
         await redisClient.del(`idempotency:${key}`);
         await redisClient.set(`refresh:${revoked.user}`, JSON.stringify(revoked), 'EX', 600);
